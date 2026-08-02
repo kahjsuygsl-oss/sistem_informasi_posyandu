@@ -1,12 +1,12 @@
 // Prisma Schema - Sistem Informasi Posyandu
-// Database: SQLite (dev) | bisa diganti PostgreSQL untuk production
+// Database: Prisma Postgres (production & dev)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

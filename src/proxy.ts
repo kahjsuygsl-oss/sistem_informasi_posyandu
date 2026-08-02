@@ -11,16 +11,30 @@ const ROLE_ROUTES: Record<string, string> = {
 // Route yang bisa diakses tanpa login
 const PUBLIC_ROUTES = ["/login"]
 
+// req.url/req.nextUrl.origin tidak selalu bisa dipercaya di balik reverse proxy
+// (Prisma Compute dkk) — pakai header X-Forwarded-Host/Proto kalau ada, baru fallback
+// ke NEXTAUTH_URL, baru ke origin bawaan request.
+function resolveOrigin(req: Parameters<Parameters<typeof auth>[0]>[0]) {
+  const forwardedHost = req.headers.get("x-forwarded-host")
+  if (forwardedHost) {
+    const forwardedProto = req.headers.get("x-forwarded-proto") ?? "https"
+    return `${forwardedProto}://${forwardedHost}`
+  }
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL
+  return req.nextUrl.origin
+}
+
 export default auth((req) => {
   const { pathname } = req.nextUrl
   const session = req.auth
+  const origin = resolveOrigin(req)
 
   // Izinkan public routes
   if (PUBLIC_ROUTES.some((r) => pathname.startsWith(r))) {
     // Kalau sudah login, redirect ke dashboard role-nya
     if (session?.user) {
       const dashboardUrl = getDashboardUrl(session.user.role)
-      return NextResponse.redirect(new URL(dashboardUrl, req.url))
+      return NextResponse.redirect(new URL(dashboardUrl, origin))
     }
     return NextResponse.next()
   }
@@ -32,7 +46,7 @@ export default auth((req) => {
 
   // Belum login → redirect ke login
   if (!session?.user) {
-    const loginUrl = new URL("/login", req.url)
+    const loginUrl = new URL("/login", origin)
     loginUrl.searchParams.set("callbackUrl", pathname)
     return NextResponse.redirect(loginUrl)
   }
@@ -42,7 +56,7 @@ export default auth((req) => {
 
   // Redirect dari root ke dashboard
   if (pathname === "/") {
-    return NextResponse.redirect(new URL(getDashboardUrl(userRole), req.url))
+    return NextResponse.redirect(new URL(getDashboardUrl(userRole), origin))
   }
 
   // Cek apakah user mengakses route yang bukan haknya
@@ -52,7 +66,7 @@ export default auth((req) => {
 
   if (isProtectedRoute && !pathname.startsWith(allowedPrefix)) {
     // Akses route role lain → redirect ke dashboard sendiri
-    return NextResponse.redirect(new URL(getDashboardUrl(userRole), req.url))
+    return NextResponse.redirect(new URL(getDashboardUrl(userRole), origin))
   }
 
   return NextResponse.next()
