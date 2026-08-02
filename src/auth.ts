@@ -4,6 +4,9 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  // Wajib di host non-Vercel (mis. Prisma Compute) di balik reverse proxy —
+  // tanpa ini NextAuth menolak mempercayai header Host yang diteruskan proxy.
+  trustHost: true,
   session: {
     strategy: "jwt",
     maxAge: 8 * 60 * 60, // 8 jam — sesuai NFR keamanan (sesi login punya batas waktu)
