@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# data pribadi / hasil eksperimen — jangan pernah dipublikasikan
+/data-posyandu/
+/laravel-backend-new/
+
+# database lokal (SQLite dev) — bukan untuk version control
+/prisma/dev.db
+/prisma/dev.db-journal
+*.db
+*.db-journal

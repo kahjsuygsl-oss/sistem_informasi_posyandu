@@ -1,0 +1,165 @@
+// Prisma Schema - Sistem Informasi Posyandu
+// Database: SQLite (dev) | bisa diganti PostgreSQL untuk production
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── USER & AUTH ───────────────────────────────────────────────────────────
+
+model User {
+  id         String   @id @default(cuid())
+  name       String
+  email      String   @unique
+  password   String
+  role       String   @default("KADER") // KADER | ADMIN | SUPERADMIN
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  posyanduId String?
+  posyandu   Posyandu? @relation(fields: [posyanduId], references: [id])
+
+  pemeriksaanBalita PemeriksaanBalita[]
+  pemeriksaanBumil  PemeriksaanBumil[]
+  activityLogs      ActivityLog[]
+}
+
+// ─── LOG AKTIVITAS (FR-04) ─────────────────────────────────────────────────
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  action    String   // LOGIN | LOGOUT
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+// ─── POSYANDU ──────────────────────────────────────────────────────────────
+
+model Posyandu {
+  id         String   @id @default(cuid())
+  nama       String
+  desa       String
+  kecamatan  String
+  kabupaten  String
+  provinsi   String   @default("NUSA TENGGARA BARAT")
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  users   User[]
+  balita  Balita[]
+  bumil   Bumil[]
+}
+
+// ─── BALITA ────────────────────────────────────────────────────────────────
+
+model Balita {
+  id            String   @id @default(cuid())
+  nik           String?  @unique
+  namaLengkap   String
+  tanggalLahir  DateTime
+  jenisKelamin  String   // L | P
+  namaOrangTua  String
+  dusun         String?
+  alamat        String?
+  isAktif       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  posyanduId  String
+  posyandu    Posyandu @relation(fields: [posyanduId], references: [id])
+
+  pemeriksaan PemeriksaanBalita[]
+}
+
+model PemeriksaanBalita {
+  id             String   @id @default(cuid())
+  tanggalPeriksa DateTime
+  umurBulan      Int
+  beratBadan     Float    // kg
+  tinggiBadan    Float    // cm
+  posisiUkur     String   @default("TERLENTANG") // BERDIRI | TERLENTANG
+  lingkarKepala  Float?   // cm
+  lingkarLengan  Float?   // cm (LILA)
+
+  // Z-Score dihitung otomatis dari tabel standar WHO
+  zScoreBBU   Float?  // Berat Badan / Umur
+  zScoreTBU   Float?  // Tinggi Badan / Umur
+  zScoreBBTB  Float?  // Berat Badan / Tinggi Badan
+
+  // Hasil klasifikasi (ambang batas sesuai PRD §8)
+  // statusBBU     : BB_SANGAT_KURANG | BB_KURANG | BB_NORMAL | RISIKO_BB_LEBIH        (§8.3, dari zScoreBBU)
+  // statusStunting: SANGAT_PENDEK | PENDEK | NORMAL | TINGGI                          (§8.2, dari zScoreTBU)
+  // statusGizi    : GIZI_BURUK | GIZI_KURANG | GIZI_BAIK | BERISIKO_GIZI_LEBIH |
+  //                 GIZI_LEBIH | OBESITAS                                             (§8.4, dari zScoreBBTB)
+  statusBBU       String?
+  statusStunting  String?
+  statusGizi      String?
+
+  catatan    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  balitaId String
+  balita   Balita @relation(fields: [balitaId], references: [id])
+
+  kaderId String
+  kader   User   @relation(fields: [kaderId], references: [id])
+}
+
+// ─── BUMIL (IBU HAMIL) ─────────────────────────────────────────────────────
+
+model Bumil {
+  id             String    @id @default(cuid())
+  nik            String?
+  namaLengkap    String
+  namaSuami      String?
+  tanggalLahir   DateTime?
+  dusun          String?
+  alamat         String?
+  usiaKehamilan  Int?      // minggu, saat pendaftaran
+  hpht           DateTime? // Hari Pertama Haid Terakhir
+  hpl            DateTime? // Hari Perkiraan Lahir
+  isAktif        Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  posyanduId String
+  posyandu   Posyandu @relation(fields: [posyanduId], references: [id])
+
+  pemeriksaan PemeriksaanBumil[]
+}
+
+model PemeriksaanBumil {
+  id             String    @id @default(cuid())
+  tanggalPeriksa DateTime
+  usiaKandungan  Int?      // minggu
+  kehamilanKe    Int?      // G (gravida)
+  paritas        Int?      // P
+  abortus        Int?      // A
+  hpht           DateTime? // Hari Pertama Haid Terakhir
+  hpl            DateTime? // Hari Perkiraan Lahir
+  beratBadan     Float?    // kg
+  tinggiBadan    Float?    // cm
+  lingkarLengan  Float?    // cm (LILA)
+  imt            Float?    // Indeks Massa Tubuh
+  tekananDarah   String?   // misal "120/80"
+  statusKek      Boolean   @default(false) // Kekurangan Energi Kronik
+  catatan        String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  bumilId String
+  bumil   Bumil  @relation(fields: [bumilId], references: [id])
+
+  kaderId String
+  kader   User   @relation(fields: [kaderId], references: [id])
+}
