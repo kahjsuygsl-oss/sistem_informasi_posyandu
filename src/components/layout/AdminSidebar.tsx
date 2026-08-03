@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
@@ -72,67 +73,113 @@ const navItems = [
 
 export default function AdminSidebar() {
   const pathname = usePathname()
+  const [open, setOpen] = useState(false)
 
   return (
-    <aside className="w-60 min-h-screen bg-white border-r border-gray-200 flex flex-col">
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-gray-100">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <>
+      {/* Mobile top bar */}
+      <header className="md:hidden fixed top-0 inset-x-0 z-30 h-14 flex items-center justify-between px-4 bg-white border-b border-gray-200">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </div>
-          <div>
-            <p className="text-sm font-bold text-gray-900 leading-tight">Posyandu</p>
-            <p className="text-xs text-gray-500 leading-tight">Digital</p>
-          </div>
+          <span className="text-sm font-bold text-gray-900">Posyandu Digital</span>
         </div>
-      </div>
-
-      {/* Role badge */}
-      <div className="px-4 pt-4 pb-2">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
-          Admin
-        </span>
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-2 space-y-0.5">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                isActive
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-              }`}
-            >
-              <span className={isActive ? "text-blue-600" : "text-gray-400"}>
-                {item.icon}
-              </span>
-              {item.label}
-            </Link>
-          )
-        })}
-      </nav>
-
-      {/* Bottom */}
-      <div className="p-3 border-t border-gray-100">
         <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all"
+          onClick={() => setOpen(true)}
+          aria-label="Buka menu"
+          className="p-2 -mr-2 text-gray-600"
         >
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
-          Keluar
         </button>
-      </div>
-    </aside>
+      </header>
+
+      {/* Backdrop */}
+      {open && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/40"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-200 ease-in-out ${
+          open ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0 md:static md:z-auto md:w-60 md:min-h-screen`}
+      >
+        {/* Logo */}
+        <div className="px-5 py-5 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900 leading-tight">Posyandu</p>
+              <p className="text-xs text-gray-500 leading-tight">Digital</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setOpen(false)}
+            aria-label="Tutup menu"
+            className="md:hidden p-2 -mr-2 text-gray-400"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Role badge */}
+        <div className="px-4 pt-4 pb-2">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
+            Admin
+          </span>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  isActive
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <span className={isActive ? "text-blue-600" : "text-gray-400"}>
+                  {item.icon}
+                </span>
+                {item.label}
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* Bottom */}
+        <div className="p-3 border-t border-gray-100">
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all"
+          >
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Keluar
+          </button>
+        </div>
+      </aside>
+    </>
   )
 }
